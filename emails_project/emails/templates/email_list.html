@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Message List</title>
+    <style>
+      #progress-bar {
+        width: 100%;
+        background-color: #f3f3f3;
+        border: 1px solid #ddd;
+      }
+      #progress-bar-fill {
+        height: 20px;
+        width: 0;
+        background-color: #4caf50;
+        text-align: center;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Message List</h1>
+    <div id="progress-bar">
+      <div id="progress-bar-fill">Reading messages...</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Subject</th>
+          <th>Sent Date</th>
+          <th>Received Date</th>
+          <th>Body</th>
+          <th>Attachments</th>
+        </tr>
+      </thead>
+      <tbody id="message-list"></tbody>
+    </table>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      $(function () {
+        const socket = new WebSocket(
+          "ws://" + window.location.host + "/ws/messages/",
+        );
+
+        socket.onopen = function (event) {
+          socket.send(
+            JSON.stringify({
+              command: "test",
+            }),
+          );
+        };
+
+        socket.onmessage = function (e) {
+          const data = JSON.parse(e.data);
+          if (data.type === "progress") {
+            $("#progress-bar-fill")
+              .css("width", data.progress + "%")
+              .text(data.progress + "% Complete");
+          } else if (data.type === "message") {
+            const message = data.message;
+            $("#message-list").append(`
+                        <tr>
+                            <td>${message.subject}</td>
+                            <td>${message.sent_date}</td>
+                            <td>${message.received_date}</td>
+                            <td>${message.body.substring(0, 100)}...</td>
+                            <td>${message.attachments.join(", ")}</td>
+                        </tr>
+                    `);
+          }
+        };
+      });
+    </script>
+  </body>
+</html>
